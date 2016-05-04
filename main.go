@@ -14,12 +14,14 @@ import (
 )
 
 type TestJob struct {
-	Id        string
-	Host      string
-	Community string
-	Oid       string
-	Result    string
-	Timeout   int
+	Id          string
+	Host        string
+	Community   string
+	Oid         string
+	Result      string
+	Timeout     int
+	fail        bool
+	failMessage string
 }
 
 func NewTestJob(id string, host string, community string, oid string, timeout int) *TestJob {
@@ -34,6 +36,11 @@ func NewTestJob(id string, host string, community string, oid string, timeout in
 	return t
 }
 
+func (t *TestJob) SetFailure(message string) {
+	t.fail = true
+	t.failMessage = message
+}
+
 func (t *TestJob) GetSnmpValue() string {
 	version := wapsnmp.SNMPv2c
 	target := t.Host
@@ -45,12 +52,16 @@ func (t *TestJob) GetSnmpValue() string {
 	wsnmp, err := wapsnmp.NewWapSNMP(target, t.Community, version, time.Duration(t.Timeout)*time.Millisecond, 0)
 	defer wsnmp.Close()
 	if err != nil {
-		fmt.Printf("Error creating wsnmp => %v\n", wsnmp)
+
+		t.SetFailure("ECW")
+		//fmt.Printf("Error creating wsnmp => %v\n", wsnmp)
 		return ""
 	}
 	table, err := wsnmp.GetTable(oid)
 	if err != nil {
-		fmt.Printf("Error getting table => %v\n", wsnmp)
+
+		t.SetFailure("ECT")
+		//fmt.Printf("Error getting table => %v\n", wsnmp)
 		return ""
 	}
 
@@ -106,7 +117,12 @@ func main() {
 	d.SetMF(func(task npd.Task) {
 		tj := (*task.TargetObj).(*TestJob)
 		time.Sleep(100 * time.Millisecond)
-		fmt.Printf("task: %s(%s) 正在往host: %s, 推送结果: %s \n ", tj.Id, tj.Oid, tj.Host, tj.Result)
+		if !tj.fail {
+			fmt.Printf("task: %s(%s) 正在往host: %s, 推送结果: %s \n ", tj.Id, tj.Oid, tj.Host, tj.Result)
+		} else {
+			fmt.Printf("正在发生错误信息 %s : %s \n", tj.failMessage, tj.Oid)
+		}
+
 	})
 
 	itvl := time.Duration(*interval)
