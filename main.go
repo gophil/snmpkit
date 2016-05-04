@@ -65,7 +65,12 @@ func (t *TestJob) GetSnmpValue() string {
 		return ""
 	}
 
-	return strconv.Itoa(len(table))
+	result := ""
+	for _, v := range table {
+		result += fmt.Sprintf("%v | ", v)
+	}
+
+	return result
 }
 
 //作业执行方法
