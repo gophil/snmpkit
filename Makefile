@@ -3,10 +3,10 @@
 BUILDFILE = main.go
 
 # 编译后的静态链接库文件
-TARGETFILE = buildss/snmpdemo
+TARGETNAME = snmpdemo
 
 # GOOS为目标主机系统, mac os则为 "darwin", window系列则为 "windows"
-GOOS = darwin 
+GOOS = linux 
 # GOARCH为目标主机CPU架构, 默认为amd64 
 GOARCH= amd64
 
@@ -20,7 +20,7 @@ format:
 
 build:
 	mkdir -p builds
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -v -o $(TARGETFILE) $(BUILDFILE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -v -o builds/$(TARGETNAME) $(BUILDFILE)
 
 clean:
 	go clean -i
