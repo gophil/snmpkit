@@ -139,7 +139,7 @@ func main() {
 
 	itvl := time.Duration(*interval)
 	d.RunWithLimiter(itvl * time.Millisecond)
-	d.Run()
+	//d.Run()
 	defer d.Stop()
 
 	start := time.Now()
