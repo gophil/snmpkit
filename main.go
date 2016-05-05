@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+var goc int = 0
+var erroc int = 0
+var wgroutinue = 0
+var submitc = 0
+
 type TestJob struct {
 	Id          string
 	Host        string
@@ -49,25 +54,26 @@ func (t *TestJob) GetSnmpValue() string {
 	oid := wapsnmp.MustParseOid(id)
 	fmt.Printf("Contacting %v %v %v\n", target, t.Community, version)
 
+	result := ""
+
 	wsnmp, err := wapsnmp.NewWapSNMP(target, t.Community, version, time.Duration(t.Timeout)*time.Millisecond, 0)
 	defer wsnmp.Close()
 	if err != nil {
-
+		erroc++
 		t.SetFailure("ECW")
-		//fmt.Printf("Error creating wsnmp => %v\n", wsnmp)
-		return ""
+		fmt.Printf("Error creating wsnmp => %v\n", wsnmp)
 	}
+
 	table, err := wsnmp.GetTable(oid)
 	if err != nil {
-
+		erroc++
 		t.SetFailure("ECT")
-		//fmt.Printf("Error getting table => %v\n", wsnmp)
-		return ""
+		fmt.Printf("Error getting table => %v\n", wsnmp)
 	}
 
-	result := ""
-	for _, v := range table {
-		result += fmt.Sprintf("%v | ", v)
+	for k, v := range table {
+		goc++
+		result += fmt.Sprintf(" %v - %v | \n", k, v)
 	}
 
 	return result
@@ -75,6 +81,7 @@ func (t *TestJob) GetSnmpValue() string {
 
 //作业执行方法
 func (t *TestJob) HandleJob() {
+	wgroutinue++
 	v := t.GetSnmpValue()
 	t.Result = v
 
@@ -132,6 +139,7 @@ func main() {
 
 	itvl := time.Duration(*interval)
 	d.RunWithLimiter(itvl * time.Millisecond)
+	d.Run()
 	defer d.Stop()
 
 	start := time.Now()
@@ -151,6 +159,7 @@ func main() {
 				j_index := strconv.Itoa(j)
 				job := npd.CreateTask(NewTestJob(i_index+"-"+j_index, item.Host, item.Community, oid, *timeout), "HandleJob")
 				d.SubmitTask(job)
+				submitc++
 			}
 
 		}
@@ -166,5 +175,9 @@ func main() {
 	cost := fmt.Sprintln(time.Now().Sub(start).Seconds())
 
 	fmt.Println("all jobs are finished, cost (seconds): ", cost)
+	fmt.Printf("submit count : %d\n", submitc)
+	fmt.Printf("work goroutinue : %d\n", wgroutinue)
+	fmt.Printf("nomal send : %d\n", goc)
+	fmt.Printf("error send : %d\n", erroc)
 
 }
